@@ -1,4 +1,4 @@
-load("@build_bazel_rules_nodejs//:defs.bzl", _nodejs_test = "nodejs_test")
+load("@build_bazel_rules_nodejs_old//:defs.bzl", _nodejs_test = "nodejs_test")
 
 def _jest_node_test_impl(ctx):
     test_sources = ctx.files.srcs

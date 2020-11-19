@@ -1,4 +1,4 @@
-load("@build_bazel_rules_nodejs//internal/common:node_module_info.bzl", "NodeModuleInfo")
+load("@build_bazel_rules_nodejs_old//internal/common:node_module_info.bzl", "NodeModuleInfo")
 
 def _collect_sources(ctx):
   es5_sources = depset(ctx.files.srcs)

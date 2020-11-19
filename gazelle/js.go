@@ -54,7 +54,7 @@ func (s *jslang) Kinds() map[string]rule.KindInfo {
 			},
 			ResolveAttrs: map[string]bool{"deps": true},
 		},
-		"jest_node_test": {
+		"jest_test": {
 			MatchAny: false,
 			NonEmptyAttrs: map[string]bool{
 				"srcs": true,
@@ -95,8 +95,12 @@ func (s *jslang) Kinds() map[string]rule.KindInfo {
 func (s *jslang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name:    "@ecosia_bazel_rules_nodejs_contrib//:defs.bzl",
-			Symbols: []string{"js_library", "jest_node_test", "js_import", "babel_library"},
+			Name:    "@build_bazel_rules_nodejs_old//:index.bzl",
+			Symbols: []string{"js_library", },
+		},
+		{
+			Name:    "//:devtools.bzl",
+			Symbols: []string{"js_library", "jest_test", "js_import", "babel_library"},
 		},
 		{
 			Name:    "@npm_bazel_typscript//:index.bzl",
@@ -165,7 +169,7 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 			imports = append(imports, slice)
 		}
 		// Only generate js entries for known js files (.vue/.js) - can probably be extended
-		if (!strings.HasSuffix(f, ".vue") && !strings.HasSuffix(f, ".js") && !strings.HasSuffix(f, ".ts")) ||
+		if (!strings.HasSuffix(f, ".vue") && !strings.HasSuffix(f, ".js") && !strings.HasSuffix(f, ".jsx") && !strings.HasSuffix(f, ".ts")) ||
 			strings.HasSuffix(f, "k6.js") ||
 			strings.HasSuffix(f, "e2e.test.js") ||
 			(!js.GenerateTests && strings.HasSuffix(f, ".test.js")) {
@@ -178,13 +182,13 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 		jsFiles = append(jsFiles, f)
 
 		if strings.HasSuffix(f, ".test.js") {
-			rule := rule.NewRule("jest_node_test", base)
+			rule := rule.NewRule("jest_test", base)
 			rule.SetAttr("srcs", []string{f})
-			rule.SetAttr("entry_point", "@"+js.NpmWorkspaceName+"//:node_modules/jest-cli/bin/jest.js")
+			// rule.SetAttr("entry_point", "@"+js.NpmWorkspaceName+"//:node_modules/jest-cli/bin/jest.js")
 			// This is currently not possible. See: https://github.com/bazelbuild/bazel-gazelle/issues/511
 			// rule.SetAttr("env", map[string]string{"NODE_ENV": "test"})
-			rule.SetAttr("jest", "@"+js.NpmWorkspaceName+"//jest/bin:jest")
-			rule.SetAttr("max_workers", "1")
+			// rule.SetAttr("jest", "@"+js.NpmWorkspaceName+"//jest/bin:jest")
+			// rule.SetAttr("max_workers", "1")
 			rules = append(rules, rule)
 		} else if strings.HasSuffix(f, ".ts") {
 			rule := rule.NewRule("ts_library", base)
@@ -201,7 +205,7 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 		}
 	}
 
-	empty = append(empty, generateEmpty(args.File, jsFiles, map[string]bool{js.JsLibrary.String(): true, "jest_node_test": true, "ts_library": true})...)
+	empty = append(empty, generateEmpty(args.File, jsFiles, map[string]bool{js.JsLibrary.String(): true, "jest_test": true, "ts_library": true})...)
 
 	if len(js.JsImportExtenstions) > 0 {
 		empty = append(empty, generateEmpty(args.File, jsImportFiles, map[string]bool{"js_import": true})...)
@@ -219,7 +223,7 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 	}
 }
 
-// generateEmpty generates a list of jest_node_test, js_library and js_import rules that may be
+// generateEmpty generates a list of jest_test, js_library and js_import rules that may be
 // deleted. This is generated from these existing rules with srcs lists that don't match any
 // static or generated files.
 func generateEmpty(f *rule.File, files []string, knownRuleKinds map[string]bool) []*rule.Rule {

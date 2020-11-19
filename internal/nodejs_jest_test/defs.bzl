@@ -2,10 +2,10 @@ load(
     "@ecosia_bazel_rules_nodejs_contrib//internal/nodejs_jest_test:test_sources_aspect.bzl",
     "test_sources_aspect",
 )
-load("@build_bazel_rules_nodejs//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
-load("@build_bazel_rules_nodejs//internal/common:sources_aspect.bzl", "sources_aspect")
-load("@build_bazel_rules_nodejs//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfiles")
-load("@build_bazel_rules_nodejs//internal/common:node_module_info.bzl", "NodeModuleInfo", "collect_node_modules_aspect")
+load("@build_bazel_rules_nodejs_old//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
+load("@build_bazel_rules_nodejs_old//internal/common:sources_aspect.bzl", "sources_aspect")
+load("@build_bazel_rules_nodejs_old//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfiles")
+load("@build_bazel_rules_nodejs_old//internal/common:node_module_info.bzl", "NodeModuleInfo", "collect_node_modules_aspect")
 load(
     "@ecosia_bazel_rules_nodejs_contrib//internal/nodejs_jest_test:node.bzl",
     "NODEJS_EXECUTABLE_ATTRS",
