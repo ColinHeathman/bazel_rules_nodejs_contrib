@@ -22,7 +22,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/language"
 	"github.com/bazelbuild/bazel-gazelle/rule"
@@ -76,7 +75,7 @@ func (s *jslang) Kinds() map[string]rule.KindInfo {
 				"srcs": true,
 			},
 		},
-		"ts_library": {
+		"ts_project": {
 			MatchAny: false,
 			NonEmptyAttrs: map[string]bool{
 				"srcs": true,
@@ -95,16 +94,16 @@ func (s *jslang) Kinds() map[string]rule.KindInfo {
 func (s *jslang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
-			Name:    "@build_bazel_rules_nodejs_old//:index.bzl",
+			Name:    "@benchsci_test_tools_js//:defs.bzl",
 			Symbols: []string{"js_library", },
 		},
 		{
-			Name:    "//:devtools.bzl",
-			Symbols: []string{"js_library", "jest_test", "js_import", "babel_library"},
+			Name:    "@benchsci_test_tools_js//:defs.bzl",
+			Symbols: []string{"jest_test", "js_import", "babel_library"},
 		},
 		{
-			Name:    "@npm_bazel_typscript//:index.bzl",
-			Symbols: []string{"ts_library"},
+			Name:    "@benchsci_test_tools_js//:defs.bzl",
+			Symbols: []string{"ts_project"},
 		},
 	}
 }
@@ -157,19 +156,20 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 
 	// var normalFiles []string
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
+
 		base = strings.ToLower(path.Base(f))
 		base = strings.TrimSuffix(base, filepath.Ext(base))
 		if containsSuffix(js.JsImportExtenstions, f) {
 			rule := rule.NewRule("js_import", base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			rule.SetAttr("visibility", []string{"//visibility:public"})
+			//rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 			slice := []string{}
 			imports = append(imports, slice)
 		}
 		// Only generate js entries for known js files (.vue/.js) - can probably be extended
-		if (!strings.HasSuffix(f, ".vue") && !strings.HasSuffix(f, ".js") && !strings.HasSuffix(f, ".jsx") && !strings.HasSuffix(f, ".ts")) ||
+		if (!strings.HasSuffix(f, ".vue") && !strings.HasSuffix(f, ".js") && !strings.HasSuffix(f, ".jsx") && !strings.HasSuffix(f, ".tsx") && !strings.HasSuffix(f, ".ts")) ||
 			strings.HasSuffix(f, "k6.js") ||
 			strings.HasSuffix(f, "e2e.test.js") ||
 			(!js.GenerateTests && strings.HasSuffix(f, ".test.js")) {
@@ -190,17 +190,29 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 			// rule.SetAttr("jest", "@"+js.NpmWorkspaceName+"//jest/bin:jest")
 			// rule.SetAttr("max_workers", "1")
 			rules = append(rules, rule)
-		} else if strings.HasSuffix(f, ".ts") {
-			rule := rule.NewRule("ts_library", base)
+		} else if strings.HasSuffix(f, "test.ts") {
+			rule := rule.NewRule("jest_test", base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			rule.SetAttr("visibility", []string{"//visibility:public"})
+			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rules = append(rules, rule)
+		} else if strings.HasSuffix(f, ".ts") {
+			rule := rule.NewRule("ts_project", base)
+			rule.SetAttr("srcs", []string{f})
+			// TODO: Ideally we would not just apply public visibility
+			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rules = append(rules, rule)
+		} else if strings.HasSuffix(f, ".tsx") {
+			rule := rule.NewRule("ts_project", base)
+			rule.SetAttr("srcs", []string{f})
+			// TODO: Ideally we would not just apply public visibility
+			//rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 		} else {
 			rule := rule.NewRule(js.JsLibrary.String(), base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			rule.SetAttr("visibility", []string{"//visibility:public"})
+			//rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 		}
 	}
