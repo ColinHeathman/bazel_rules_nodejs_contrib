@@ -28,6 +28,7 @@ func TestJsRegexpGroupNames(t *testing.T) {
 	nameMap := map[string]int{
 		"import":  importSubexpIndex,
 		"require": requireSubexpIndex,
+		"export": exportSubexpIndex,
 	}
 	for name, index := range nameMap {
 		if names[index] != name {
@@ -49,14 +50,24 @@ func TestJsFileInfo(t *testing.T) {
 			name: "empty^file.js",
 			js:   "",
 			want: FileInfo{},
-		}, {
+		},
+		{
+			desc: "import single quote",
+			name: "single.js",
+			js:   `export * from 'date-fns';`,
+			want: FileInfo{
+				Imports: []string{"date-fns"},
+			},
+		},
+		{
 			desc: "import single quote",
 			name: "single.js",
 			js:   `import dateFns from 'date-fns';`,
 			want: FileInfo{
 				Imports: []string{"date-fns"},
 			},
-		}, {
+		},
+		{
 			desc: "import double quote",
 			name: "double.sass",
 			js:   `import dateFns from "date-fns";`,

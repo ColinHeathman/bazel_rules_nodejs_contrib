@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "yarn_install")
+load("@build_bazel_rules_nodejs_old//:defs.bzl", "yarn_install")
 
 def nodejs_jest_test_example_dependencies():
 

@@ -36,13 +36,13 @@ http_archive(
 )
 
 http_archive(
-    name = "build_bazel_rules_nodejs",
+    name = "build_bazel_rules_nodejs_old",
     sha256 = "0c78dd9ca95d0eedb790e11550c3ee6412b585f6d4eae2c2250d2d7511d43cd9",
     strip_prefix = "rules_nodejs-0.32.2",
     urls = ["https://github.com/bazelbuild/rules_nodejs/archive/0.32.2.tar.gz"],
 )
 
-load("@build_bazel_rules_nodejs//:defs.bzl", "node_repositories", "yarn_install")
+load("@build_bazel_rules_nodejs_old//:defs.bzl", "node_repositories", "yarn_install")
 
 node_repositories(
     package_json = [

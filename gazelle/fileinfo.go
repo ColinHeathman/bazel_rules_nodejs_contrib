@@ -59,6 +59,10 @@ func jsFileinfo(dir, name string) FileInfo {
 			imp := match[requireSubexpIndex]
 			info.Imports = append(info.Imports, strings.ToLower(unquoteImportString(imp, info.Path)))
 
+		case match[exportSubexpIndex] != nil:
+			imp := match[exportSubexpIndex]
+			info.Imports = append(info.Imports, strings.ToLower(unquoteImportString(imp, info.Path)))
+
 		default:
 			// Comment matched. Nothing to extract.
 		}
@@ -98,6 +102,7 @@ func unquoteImportString(q []byte, path string) string {
 const (
 	importSubexpIndex  = 1
 	requireSubexpIndex = 2
+	exportSubexpIndex = 3
 )
 
 // TODO: Correctly filter out comments
@@ -112,8 +117,11 @@ func buildJsRegexp() *regexp.Regexp {
 	strLit := `'(?:` + charValue + `|")*'|"(?:` + charValue + `|')*"`
 	importStmt := `(?m)^import\s(?:(?:.|\n)+?from )??(?P<import>` + strLit + `).*?`
 
+
 	requireStmt := `(?m)^\s*?(?:const .+ = )?require\((?P<require>` + strLit + `)\).*`
 
-	jsReSrc := strings.Join([]string{importStmt, requireStmt}, "|")
+	exportStmt := `(?m)^export\s(?:(?:.|\n)+?from )??(?P<export>` + strLit + `).*?`
+
+	jsReSrc := strings.Join([]string{importStmt, requireStmt, exportStmt}, "|")
 	return regexp.MustCompile(jsReSrc)
 }

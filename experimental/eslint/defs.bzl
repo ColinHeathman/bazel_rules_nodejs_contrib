@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("@build_bazel_rules_nodejs//:defs.bzl", "nodejs_binary")
+load("@build_bazel_rules_nodejs_old//:defs.bzl", "nodejs_binary")
 
 # TODO(Markus): Allow for full customization, including with custom plugins etc.
 # Extract inline bash content out into a template file

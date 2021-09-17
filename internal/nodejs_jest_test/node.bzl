@@ -20,10 +20,10 @@ They support module mapping: any targets in the transitive dependencies with
 a `module_name` attribute can be `require`d by that name.
 """
 
-load("@build_bazel_rules_nodejs//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
-load("@build_bazel_rules_nodejs//internal/common:sources_aspect.bzl", "sources_aspect")
-load("@build_bazel_rules_nodejs//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfiles")
-load("@build_bazel_rules_nodejs//internal/common:node_module_info.bzl", "NodeModuleInfo", "collect_node_modules_aspect")
+load("@build_bazel_rules_nodejs_old//internal/common:module_mappings.bzl", "module_mappings_runtime_aspect")
+load("@build_bazel_rules_nodejs_old//internal/common:sources_aspect.bzl", "sources_aspect")
+load("@build_bazel_rules_nodejs_old//internal/common:expand_into_runfiles.bzl", "expand_location_into_runfiles")
+load("@build_bazel_rules_nodejs_old//internal/common:node_module_info.bzl", "NodeModuleInfo", "collect_node_modules_aspect")
 
 def _trim_package_node_modules(package_name):
     # trim a package name down to its path prior to a node_modules
@@ -275,11 +275,11 @@ NODEJS_EXECUTABLE_ATTRS = {
         allow_single_file = True,
     ),
     "_launcher_template": attr.label(
-        default = Label("@build_bazel_rules_nodejs//internal/node:node_launcher.sh"),
+        default = Label("@build_bazel_rules_nodejs_old//internal/node:node_launcher.sh"),
         allow_single_file = True,
     ),
     "_loader_template": attr.label(
-        default = Label("@build_bazel_rules_nodejs//internal/node:node_loader.js"),
+        default = Label("@build_bazel_rules_nodejs_old//internal/node:node_loader.js"),
         allow_single_file = True,
     ),
 }
