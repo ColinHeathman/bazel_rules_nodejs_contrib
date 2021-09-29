@@ -53,15 +53,15 @@ func jsFileinfo(dir, name string) FileInfo {
 		switch {
 		case match[importSubexpIndex] != nil:
 			imp := match[importSubexpIndex]
-			info.Imports = append(info.Imports, strings.ToLower(unquoteImportString(imp, info.Path)))
+			info.Imports = append(info.Imports, (unquoteImportString(imp, info.Path)))
 
 		case match[requireSubexpIndex] != nil:
 			imp := match[requireSubexpIndex]
-			info.Imports = append(info.Imports, strings.ToLower(unquoteImportString(imp, info.Path)))
+			info.Imports = append(info.Imports, (unquoteImportString(imp, info.Path)))
 
 		case match[exportSubexpIndex] != nil:
 			imp := match[exportSubexpIndex]
-			info.Imports = append(info.Imports, strings.ToLower(unquoteImportString(imp, info.Path)))
+			info.Imports = append(info.Imports, (unquoteImportString(imp, info.Path)))
 
 		default:
 			// Comment matched. Nothing to extract.

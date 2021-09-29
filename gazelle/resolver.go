@@ -4,7 +4,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
 	"github.com/bazelbuild/bazel-gazelle/config"
 	"github.com/bazelbuild/bazel-gazelle/label"
 	"github.com/bazelbuild/bazel-gazelle/repo"
@@ -44,7 +43,6 @@ var (
 		"child_process",
 		"cluster",
 		"console",
-		"constants",
 		"crypto",
 		"dgram",
 		"dns",
@@ -97,13 +95,19 @@ func (s *jslang) Name() string {
 // returned, including an empty slice, the rule will be indexed.
 func (s *jslang) Imports(c *config.Config, r *rule.Rule, f *rule.File) []resolve.ImportSpec {
 	rel := f.Pkg
+	var withoutSuffix string
 	srcs := r.AttrStrings("srcs")
+	js := GetJsConfig(c)
 	imports := make([]resolve.ImportSpec, len(srcs))
 	for i, src := range srcs {
-		withoutSuffix := strings.TrimSuffix(src, path.Ext(src))
+		if containsSuffix(js.JsImportExtenstions, src) {
+			withoutSuffix = src
+		} else {
+			withoutSuffix = strings.TrimSuffix(src, path.Ext(src))
+		}
 		imports[i] = resolve.ImportSpec{
 			Lang: "js",
-			Imp:  strings.ToLower(path.Join(rel, withoutSuffix)),
+			Imp:  (path.Join(rel, withoutSuffix)),
 		}
 	}
 	return imports
@@ -128,7 +132,9 @@ func (s *jslang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Remot
 	imports := importsRaw.([]string)
 	js := GetJsConfig(c)
 	r.DelAttr("deps")
+	r.DelAttr("data")
 	depSet := make(map[string]bool)
+	dataSet := make(map[string]bool)
 	for _, imp := range imports {
 		normalisedImp := normaliseImports(imp, ix, from, js.AliasImportSupport)
 		l, err := resolveWithIndex(ix, normalisedImp, from)
@@ -148,15 +154,16 @@ func (s *jslang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Remot
 					imp += "/" + s[1]
 				}
 				depSet["@"+js.NpmWorkspaceName+"//"+imp] = true
-			} else if filepath.Ext(normalisedImp) == ".svg" || filepath.Ext(normalisedImp) == ".svg?inline" {
+			} else if filepath.Ext(normalisedImp) == ".svg" || filepath.Ext(normalisedImp) == ".css" || filepath.Ext(normalisedImp) == ".css" {
 				// In our vue components we also allow the import of svg files so we should handle them
-				l = label.New(from.Repo, path.Dir(normalisedImp), strings.TrimSuffix(path.Base(normalisedImp), filepath.Ext(normalisedImp)))
+				l = label.New("", path.Dir(normalisedImp), strings.TrimSuffix(path.Base(normalisedImp), filepath.Ext(normalisedImp)) + trimExt(normalisedImp))
 				depSet[l.String()] = true
 			} else if !isBuiltinModule {
 				// Now we need to check if the import is a directory "shortcut" import, i.e. path/to/dir -> path/to/dir/index.js/.vue
 				found := false
 				for _, indexFile := range indexFiles {
 					indexImport := path.Join(normalisedImp, indexFile)
+					//l, err := resolveWithIndex(ix, normalisedImp, from)
 					l, err := resolveWithIndex(ix, indexImport, from)
 					if err == nil {
 						found = true
@@ -173,7 +180,11 @@ func (s *jslang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Remot
 			log.Print(err)
 		} else {
 			l = l.Rel(from.Repo, from.Pkg)
+			if containsSuffix(js.JsImportExtenstions, normalisedImp) {
+			dataSet[l.String()] = true
+			} else {
 			depSet[l.String()] = true
+			}
 		}
 	}
 	if len(depSet) > 0 {
@@ -183,6 +194,14 @@ func (s *jslang) Resolve(c *config.Config, ix *resolve.RuleIndex, rc *repo.Remot
 		}
 		sort.Strings(deps)
 		r.SetAttr("deps", deps)
+	}
+	if len(dataSet) > 0 {
+		data := make([]string, 0, len(dataSet))
+		for datum := range dataSet {
+			data = append(data, datum)
+		}
+		sort.Strings(data)
+		r.SetAttr("data", data)
 	}
 	if r.Kind() == "jest_node_test" {
 		l, err := findJsConfig("jest", ix, from)
@@ -212,8 +231,17 @@ func findJsConfig(configName string, ix *resolve.RuleIndex, from label.Label) (l
 // Taken from https://nodejs.org/api/modules.html#modules_all_together and extended by some common aliases to make sure
 // we do not accidentally treat them as an npm package
 func isNpmDependency(imp string) bool {
-	isSourceDep := strings.HasPrefix(imp, "./") || strings.HasPrefix(imp, "/") || strings.HasPrefix(imp, "../") || strings.HasPrefix(imp, "~/") || strings.HasPrefix(imp, "@/") || strings.HasPrefix(imp, "~~/")
-	return !isSourceDep
+	var prefixes = []string{".", "/", "../", "~/", "@/", "~~/", "package", "src", "images", "app", "test-utils", "config", "styles"}
+	return !hasPrefix(prefixes, imp)
+}
+
+func hasPrefix(suffixes []string, x string) bool {
+	for _, suffix := range suffixes {
+		if strings.HasPrefix(x, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 // normaliseImports ensures that relative imports or alias imports can all resolve to the same file
@@ -256,10 +284,33 @@ func normaliseImports(imp string, ix *resolve.RuleIndex, from label.Label, alias
 		return path.Join(pkgDir, imp)
 	}
 
-	if strings.HasPrefix(imp, "./") {
+	if strings.HasPrefix(imp, ".") {
 		return path.Join(pkgDir, imp)
 	}
-
+	if strings.HasPrefix(imp, "src/design-system/theme") && pkgDir == "benchsci/frontend/reagent/.storybook" && from.Name == "preview" {
+		return "benchsci/frontend/reagent/src/design-system/theme"
+	}
+	if strings.HasPrefix(imp, "src") {
+		return path.Join(strings.Split(pkgDir, "src")[0], imp)
+	}
+	if strings.HasPrefix(imp, "images") {
+		return path.Join("benchsci/frontend/reagent/", imp)
+	}
+	if strings.HasPrefix(imp, "styles/") {
+		return path.Join("benchsci/frontend/reagent/css", strings.Split(imp, "styles")[1])
+	}
+	if strings.HasPrefix(imp, "app") {
+		return path.Join("benchsci/frontend/reagent/src/", imp)
+	}
+	if strings.HasPrefix(imp, "test-utils") {
+		return path.Join("benchsci/frontend/reagent/src/test-helpers/", imp)
+	}
+	if (imp == "config") {
+		return "benchsci/frontend/reagent/config/index"
+	}
+	if (imp == "package") {
+		return "package.json"
+	}
 	return imp
 }
 
@@ -273,6 +324,7 @@ func resolveWithIndex(ix *resolve.RuleIndex, imp string, from label.Label) (labe
 		return label.NoLabel, notFoundError
 	}
 	if len(matches) > 1 {
+		//return matches[1].Label, nil
 		return label.NoLabel, fmt.Errorf("multiple rules (%s and %s) may be imported with %q from %s", matches[0].Label, matches[1].Label, imp, from)
 	}
 	if matches[0].IsSelfImport(from) {

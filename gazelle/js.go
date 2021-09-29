@@ -68,6 +68,10 @@ func (s *jslang) Kinds() map[string]rule.KindInfo {
 		},
 		"js_import": {
 			MatchAny: false,
+			ResolveAttrs: map[string]bool{
+				"deps":   true,
+				"config": true,
+			},
 			NonEmptyAttrs: map[string]bool{
 				"srcs": true,
 			},
@@ -95,17 +99,14 @@ func (s *jslang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
 			Name:    "@benchsci_test_tools_js//:defs.bzl",
-			Symbols: []string{"js_library", },
-		},
-		{
-			Name:    "@benchsci_test_tools_js//:defs.bzl",
-			Symbols: []string{"jest_test", "js_import", "babel_library"},
-		},
-		{
-			Name:    "@benchsci_test_tools_js//:defs.bzl",
-			Symbols: []string{"ts_project"},
+			Symbols: []string{"js_library", "ts_project", "jest_test", "js_import"},
 		},
 	}
+}
+
+func trimExt(filename string) string {
+        extension := filepath.Ext(filename)
+	return "_" + strings.Replace(extension, ".", "", -1)
 }
 
 func containsSuffix(suffixes []string, x string) bool {
@@ -157,13 +158,14 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 	// var normalFiles []string
 	for _, f := range append(args.RegularFiles, args.GenFiles...) {
 
-		base = strings.ToLower(path.Base(f))
+		base = (path.Base(f))
+		prefix := trimExt(base)
 		base = strings.TrimSuffix(base, filepath.Ext(base))
 		if containsSuffix(js.JsImportExtenstions, f) {
-			rule := rule.NewRule("js_import", base)
+			rule := rule.NewRule("js_import", base + prefix)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 			slice := []string{}
 			imports = append(imports, slice)
@@ -180,6 +182,7 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 		fileInfo := jsFileinfo(args.Dir, f)
 		imports = append(imports, fileInfo.Imports)
 		jsFiles = append(jsFiles, f)
+
 
 		if strings.HasSuffix(f, ".test.js") {
 			rule := rule.NewRule("jest_test", base)
@@ -200,19 +203,19 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 			rule := rule.NewRule("ts_project", base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 		} else if strings.HasSuffix(f, ".tsx") {
 			rule := rule.NewRule("ts_project", base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 		} else {
 			rule := rule.NewRule(js.JsLibrary.String(), base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
-			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rule.SetAttr("visibility", []string{"//visibility:public"})
 			rules = append(rules, rule)
 		}
 	}

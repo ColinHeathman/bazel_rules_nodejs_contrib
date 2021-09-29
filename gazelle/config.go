@@ -117,7 +117,7 @@ func (s *jslang) CheckFlags(fs *flag.FlagSet, c *config.Config) error {
 // interpret. Gazelle prints errors for directives that are not recoginized by
 // any Configurer.
 func (s *jslang) KnownDirectives() []string {
-	return []string{"js_library", "babel_library"}
+	return []string{"js_library", "ts_project", "jest_test"}
 }
 
 // Configure modifies the configuration using directives and other information
