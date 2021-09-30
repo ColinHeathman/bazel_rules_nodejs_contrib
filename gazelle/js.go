@@ -99,7 +99,7 @@ func (s *jslang) Loads() []rule.LoadInfo {
 	return []rule.LoadInfo{
 		{
 			Name:    "@benchsci_test_tools_js//:defs.bzl",
-			Symbols: []string{"js_library", "ts_project", "jest_test", "js_import"},
+			Symbols: []string{"ts_library", "js_library", "ts_project", "jest_test", "js_import"},
 		},
 	}
 }
@@ -184,7 +184,8 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 		jsFiles = append(jsFiles, f)
 
 
-		if strings.HasSuffix(f, ".test.js") {
+		var test_extensions = []string{".test.js", ".test.jsx", ".test.tsx"}
+		if containsSuffix(test_extensions, f) {
 			rule := rule.NewRule("jest_test", base)
 			rule.SetAttr("srcs", []string{f})
 			// rule.SetAttr("entry_point", "@"+js.NpmWorkspaceName+"//:node_modules/jest-cli/bin/jest.js")
@@ -195,6 +196,12 @@ func (s *jslang) GenerateRules(args language.GenerateArgs) language.GenerateResu
 			rules = append(rules, rule)
 		} else if strings.HasSuffix(f, "test.ts") {
 			rule := rule.NewRule("jest_test", base)
+			rule.SetAttr("srcs", []string{f})
+			// TODO: Ideally we would not just apply public visibility
+			//rule.SetAttr("visibility", []string{"//visibility:public"})
+			rules = append(rules, rule)
+		} else if strings.HasSuffix(f, ".d.ts") {
+			rule := rule.NewRule("ts_library", base)
 			rule.SetAttr("srcs", []string{f})
 			// TODO: Ideally we would not just apply public visibility
 			//rule.SetAttr("visibility", []string{"//visibility:public"})
