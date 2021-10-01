@@ -89,6 +89,16 @@ func (s *jslang) Kinds() map[string]rule.KindInfo {
 			},
 			ResolveAttrs: map[string]bool{"deps": true},
 		},
+		"ts_library": {
+			MatchAny: false,
+			NonEmptyAttrs: map[string]bool{
+				"srcs": true,
+			},
+			MergeableAttrs: map[string]bool{
+				"srcs": true,
+			},
+			ResolveAttrs: map[string]bool{"deps": true},
+		},
 	}
 }
 
