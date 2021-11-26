@@ -1,9 +1,0 @@
-{
-    "dependencies": {
-        "jest-cli": "^23.6.0",
-        "fs-extra": "^7.0.1"
-    },
-    "devDependencies": {
-        "@bazel/hide-bazel-files": "0.32.2"
-    }
-}
