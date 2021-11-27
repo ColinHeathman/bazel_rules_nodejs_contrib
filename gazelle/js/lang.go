@@ -101,6 +101,19 @@ func (*JS) Kinds() map[string]rule.KindInfo {
 				"data": true,
 			},
 		},
+		"ts_definition": {
+			MatchAny: false,
+			NonEmptyAttrs: map[string]bool{
+				"srcs": true,
+			},
+			MergeableAttrs: map[string]bool{
+				"srcs": true,
+				"tags": true,
+			},
+			ResolveAttrs: map[string]bool{
+				"deps": true,
+			},
+		},
 		"jest_test": {
 			MatchAny: false,
 			NonEmptyAttrs: map[string]bool{
@@ -138,7 +151,7 @@ func (*JS) Kinds() map[string]rule.KindInfo {
 	}
 }
 
-var managedRules = []string{"js_library", "ts_project", "jest_test", "web_assets", "copy_to_bin"}
+var managedRules = []string{"js_library", "ts_project", "jest_test", "web_assets", "copy_to_bin", "ts_definition"}
 var managedRulesSet map[string]bool
 
 func init() {
@@ -238,8 +251,12 @@ func (lang *JS) GenerateRules(args language.GenerateArgs) language.GenerateResul
 		// TS DEFINITIONS ".d.ts"
 		match := tsDefsExtensionsPattern.FindStringSubmatch(baseName)
 		if len(match) > 0 {
-			// Treat this like a web asset
-			webAssetsSet[baseName] = true
+			r := rule.NewRule("ts_definition", strings.TrimSuffix(baseName, match[0])+".d")
+			r.SetAttr("srcs", []string{baseName})
+			r.SetAttr("visibility", lang.Config.Visibility.Labels)
+
+			generatedRules = append(generatedRules, r)
+			generatedImports = append(generatedImports, &noImports)
 			continue
 		}
 
@@ -372,7 +389,7 @@ func (lang *JS) GenerateRules(args language.GenerateArgs) language.GenerateResul
 	for fl := range webAssetsSet {
 		webAssets = append(webAssets, fl)
 	}
-	if !isWebRoot && len(webAssets) > 0 {
+	if len(webAssets) > 0 {
 		name := "assets"
 		r := rule.NewRule("web_assets", name)
 		r.SetAttr("srcs", webAssets)
@@ -431,10 +448,18 @@ func (*JS) Fix(c *config.Config, f *rule.File) {
 			if r.Kind() == "js_import" {
 				r.Delete()
 			}
+			// delete deprecated ts_library rule
+			if r.Kind() == "ts_library" {
+				r.Delete()
+			}
 		}
 		for _, l := range f.Loads {
+
 			if l.Has("js_import") {
 				l.Remove("js_import")
+			}
+			if l.Has("ts_library") {
+				l.Remove("ts_library")
 			}
 		}
 	}
